@@ -4,7 +4,7 @@ import shutil
 import pandas as pd
 from src.agent import ExcelAgent
 
-st.set_page_config(page_title="Availability Data Excel Agent", page_icon="ðŸ“Š", layout="wide")
+st.set_page_config(page_title="Availability Data Excel Agent", page_icon="📊", layout="wide")
 
 # Initialize Session State
 if "messages" not in st.session_state:
@@ -36,7 +36,7 @@ def main():
             # Force rerun to update UI state
             st.rerun()
 
-        if st.button("âš ï¸  Clear All Data"):
+        if st.button("Clear All Data"):
             if os.path.exists("data"):
                 for f in os.listdir("data"):
                     os.remove(os.path.join("data", f))
