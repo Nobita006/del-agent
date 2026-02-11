@@ -8,17 +8,27 @@ The dataframe contains employee availability and project allocation data.
 
 ## Rules:
 1. **Return ONLY Python code**. No markdown, no explanations, no `print()` unless asked.
-2. **Output Variables**:
-   - `result`: The final answer (number, list, or string).
+2. **Relevance Check**:
+   - if the question is NOT related to the dataframe (e.g. "What is 2+2?", "Capital of France?", "Write a poem"), return:
+     `result = "I can only answer questions about the provided Employee/Availability data."`
+     `explanation = "Question is outside the scope of the provided dataset."`
+   - If the question asks for a column NOT in the **Schema**, return:
+     `result = "I cannot answer this as the data does not contain that information."`
+     `explanation = "The available columns are: [List of similar columns]."`
+3. **Output Variables**:
+   - `result`: The final answer.
+     - **CRITICAL**: If a filter matches MULTIPLE distinct values (e.g. 'Delhi' matches 'Delhi' and 'Delhi CEC'), `result` MUST be a formatted string showing the TOTAL and the BREAKDOWN.
+       - Example: "Total: 130\n- Delhi: 128\n- Delhi CEC: 2"
+     - If no ambiguity, return the number/list/string as usual.
    - `explanation`: A string describing EXACTLY how to verify this in Excel.
-     - Format: "Filter Column X by 'Value', then Count/Sum Column Y."
-     - Example: "Filter 'Office Location' by 'Delhi', then filter 'Deployment Status' by 'Non-Billable'. Count the rows."
-3. **Role Distinction**:
+     - **Format**: "Step 1: Filter Column 'X' by values [A, B]. Step 2: ... "
+     - Example: "Filter 'Office Location' to select BOTH 'Delhi' and 'Delhi CEC'. Then filter 'Designation' to 'Consultant'."
+4. **Role Distinction**:
    - if User asks for "Consultant", they mean EXACLTY `designation == 'Consultant'`. DO NOT include 'Senior Consultant'.
    - If User asks for "Senior Consultant", match exactly.
    - If user asks for "All Consultants", match string "Consultant".
-4. **Dates**: If asked about current month/status, assume the data is already filtered for the latest report date.
-5. **Memory**: use the provided conversation history to resolve "them", "it", "previous", etc.
+5. **Dates**: If asked about current month/status, assume the data is already filtered for the latest report date.
+6. **Memory**: use the provided conversation history to resolve "them", "it", "previous", etc.
 
 ## Schema:
 {schema_context}
@@ -50,6 +60,10 @@ Fix the code. Return ONLY the fixed Python code.
 # Golden Queries Library (Question -> Code pattern)
 # These are "known good" patterns for this specific excel structure
 GOLDEN_QUERIES = [
+    {
+        "q": "How many consultants in Delhi?",
+        "code": "consultants = df[df['designation'] == 'Consultant']\n# fuzzy match delhi\ndelhi_matches = consultants[consultants['office_location'].str.contains('Delhi', case=False, na=False)]\n# Check breakdown\nbreakdown = delhi_matches['office_location'].value_counts()\nif len(breakdown) > 1:\n    breakdown_str = '\\n'.join([f'- {k}: {v}' for k,v in breakdown.items()])\n    result = f\"Total: {len(delhi_matches)}\\n{breakdown_str}\"\n    explanation = f\"Filter 'DESIGNATION' to 'Consultant'. Filter 'OFFICE_LOCATION' to select: {', '.join(breakdown.index.tolist())}.\"\nelse:\n    result = len(delhi_matches)\n    explanation = \"Filter 'Designation' to 'Consultant' and 'Office Location' to 'Delhi'.\""
+    },
     {
         "q": "How many non-billable people are in Delhi?",
         "code": "df_filtered = df[(df['office_location'].str.contains('Delhi', case=False, na=False)) & (df['deployment_status'] == 'NON BILLABLE')]\nresult = df_filtered['employee_id'].nunique()\nexplanation = \"Filter 'Office Location' for 'Delhi' (matches Delhi, Delhi-NCR) and 'Deployment Status' for 'NON BILLABLE'. Count unique Employee IDs.\""

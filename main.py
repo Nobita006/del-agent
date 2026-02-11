@@ -16,8 +16,9 @@ def main():
             q = input("> ")
             if q.lower() in ['exit', 'quit']:
                 break
-            answer = agent.run(q)
-            print(f"Result: {answer}")
+            answer_dict = agent.run(q)
+            print(f"\nResult: {answer_dict.get('result')}")
+            print(f"Explanation: {answer_dict.get('explanation')}\n")
 
 if __name__ == "__main__":
     main()
