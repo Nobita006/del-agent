@@ -82,7 +82,14 @@ We implemented specific "Guardrails" to handle real-world messiness:
 -   **Problem**: API Quotas ("Resource Exhausted").
 -   **Solution**: Used `@retry` decorator to automatically wait and retry (Exponential Backoff) if the API is busy.
 
-## 6. How to Run
+## 6. Historical Analysis & Comparisons
+The agent now supports **Time-Travel**.
+1.  **Multiple Files**: It loads *all* Excel files in the `data/` folder.
+2.  **Date Parsing**: It extracts the date from the filename (`Name_DDMMYYYY.xlsx`).
+3.  **Unified Dataset**: It combines them into one master dataset with a `report_date` column.
+4.  **Comparison Logic**: You can ask "Compare headcount between Oct 9 and Oct 16", and it will filter by date to give you the delta.
+
+## 7. How to Run
 1.  **Start**: Double-click `run_agent.bat`.
 2.  **Access**: Open `http://localhost:8501`.
 3.  **Share**: Setup `ngrok` (as per Walkthrough) to share with friends.

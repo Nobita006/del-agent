@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 import google.generativeai as genai
-from .utils import get_latest_file
+from .utils import get_latest_file, get_all_files
 from .prompts import SYSTEM_PROMPT, ERROR_PROMPT, get_few_shot_examples
 from dotenv import load_dotenv
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
@@ -16,6 +16,8 @@ class ExcelAgent:
         self.schema_str = ""
         self.values_str = ""
         self.report_date = None
+        self.latest_date = None
+        self.date_range = []
         self.chat_history = []  # List of {"role": "user/assistant", "content": "..."}
         
         # Setup Gemini
@@ -23,52 +25,64 @@ class ExcelAgent:
         if not api_key:
             print("WARNING: GEMINI_API_KEY not found in .env")
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-3-flash-preview') 
+        self.model = genai.GenerativeModel('gemini-2.0-flash') 
 
     def load_data(self):
         """
-        Loads the latest Excel file, standardizes columns, and prepares schema.
+        Loads ALL Excel files from data directory, adds 'report_date', and concatenates.
         """
-        # For now, we look in current dir for testing, or data_dir
-        # The user seems to have file in root.
-        root_file = get_latest_file(".")
-        data_file = get_latest_file(self.data_dir)
+        all_files = get_all_files(self.data_dir)
+        # Fallback to current dir if data_dir is empty checking
+        if not all_files:
+            all_files = get_all_files(".")
         
-        latest = root_file if root_file else data_file
-        
-        if not latest:
-            return "No Excel file found."
+        if not all_files:
+            return "No Excel files found."
             
+        dfs = []
+        self.date_range = []
+        
         try:
-            file_path = latest['path']
-            self.report_date = latest['date']
-            
-            # Read specific sheet
-            self.df = pd.read_excel(file_path, sheet_name="Availability Tracker")
-            
-            # Standardize Headers: Snake Case
-            # e.g. "Office Location" -> "office_location"
-            self.df.columns = [
-                str(col).strip().lower()
-                .replace(" ", "_").replace("-", "_").replace("/", "_").replace(".", "")
-                for col in self.df.columns
-            ]
-            
-            # Specific Mappings for bad headers
-            rename_map = {
-                "emplo+a514+a1+a1:n18": "employee_id",
-                "rm_name": "reporting_manager",
-                "lwd": "last_working_day"
-            }
-            self.df.rename(columns=rename_map, inplace=True)
-            
-            # Parse Dates
-            if 'date_of_joining' in self.df.columns:
-                self.df['date_of_joining'] = pd.to_datetime(self.df['date_of_joining'], errors='coerce')
+            for file_info in all_files:
+                f_path = file_info['path']
+                r_date = file_info['date']
+                self.date_range.append(r_date)
                 
+                # Read
+                temp_df = pd.read_excel(f_path, sheet_name="Availability Tracker")
+                
+                # Standardize Headers
+                temp_df.columns = [
+                    str(col).strip().lower()
+                    .replace(" ", "_").replace("-", "_").replace("/", "_").replace(".", "")
+                    for col in temp_df.columns
+                ]
+                
+                # Renaming bad headers
+                rename_map = {
+                    "emplo+a514+a1+a1:n18": "employee_id",
+                    "rm_name": "reporting_manager",
+                    "lwd": "last_working_day"
+                }
+                temp_df.rename(columns=rename_map, inplace=True)
+                
+                # Add Report Date
+                temp_df['report_date'] = pd.to_datetime(r_date)
+                
+                # Parse internal dates
+                if 'date_of_joining' in temp_df.columns:
+                    temp_df['date_of_joining'] = pd.to_datetime(temp_df['date_of_joining'], errors='coerce')
+                
+                dfs.append(temp_df)
+            
+            # Concat
+            self.df = pd.concat(dfs, ignore_index=True)
+            self.report_date = max(self.date_range) # Set to latest for default
+            
             self._prepare_context()
-            self.chat_history = [] # Reset history on new file load
-            return f"Loaded data from {latest['file']} (Date: {self.report_date})"
+            self.chat_history = [] 
+            
+            return f"Loaded {len(all_files)} files. Date Range: {min(self.date_range)} to {max(self.date_range)}."
             
         except Exception as e:
             return f"Error loading data: {str(e)}"
@@ -86,6 +100,13 @@ class ExcelAgent:
         # Unique values for important categorical columns
         key_cols = ['office_location', 'category', 'deployment_status', 'status', 'spine_current_status', 'designation']
         values_list = []
+        
+        # Add available dates
+        if self.date_range:
+            dates = sorted([d.strftime('%Y-%m-%d') for d in self.date_range], reverse=True)
+            values_list.append(f"AVAILABLE REPORT DATES (YYYY-MM-DD): {dates}")
+            values_list.append(f"LATEST REPORT DATE: {max(dates)}")
+
         for col in key_cols:
             if col in self.df.columns:
                 uniques = self.df[col].dropna().unique().tolist()
@@ -139,9 +160,14 @@ class ExcelAgent:
         Executes the generated code in a safe local environment.
         """
         # Sandbox variables
+        import matplotlib.pyplot as plt
+        import plotly.express as px
+        
         local_vars = {
             "df": self.df, 
-            "pd": pd, 
+            "pd": pd,
+            "plt": plt,
+            "px": px,
             "result": None,
             "explanation": None
         }
@@ -161,7 +187,13 @@ class ExcelAgent:
             return {"result": "Data not loaded.", "explanation": ""}
             
         print(f"Generating code for: {question}")
-        code = self.generate_code(question)
+        
+        try:
+            code = self.generate_code(question)
+        except Exception as e:
+            print(f"Generation failed: {e}")
+            return {"result": "âš ï¸  **Server Busy / Rate Limit Hit**.\nPlease wait 30 seconds and try again.", "explanation": f"API Error: {str(e)}"}
+
         print(f"Generated Code:\n{code}")
         
         result, explanation = self.execute_code(code)
