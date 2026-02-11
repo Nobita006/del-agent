@@ -3,7 +3,7 @@ openpyxl
 phonenumbers
 python-dotenv
 google-generativeai
-streamlit
+streamlit>=1.24.0
 tabulate
 fuzzywuzzy
 python-Levenshtein
