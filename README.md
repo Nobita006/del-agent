@@ -1,5 +1,8 @@
 # Availability Data Excel Agent - Technical Report
 
+## Live Demo
+https://del-agent.streamlit.app/
+
 ## 1. Overview
 This project is a high-accuracy, dependability-focused AI Agent designed to answer natural language questions about weekly Employee Availability Excel reports. Unlike standard chatbots, this agent uses a **Code Generation Architecture** to ensure mathematical precision and transparency.
 
