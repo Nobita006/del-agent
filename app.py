@@ -43,12 +43,17 @@ def main():
             else:
                 st.info(f"File '{uploaded_file.name}' already loaded.")
 
-        if st.button("Clear All Data"):
-            if os.path.exists("data"):
-                for f in os.listdir("data"):
-                    os.remove(os.path.join("data", f))
             st.session_state.agent.df = None
             st.rerun()
+            
+        if st.checkbox("Run Data Health Check"):
+            if st.session_state.agent.df is not None:
+                issues = st.session_state.agent.check_data_quality()
+                for issue in issues:
+                    if "âœ…" in issue:
+                        st.success(issue)
+                    else:
+                        st.warning(issue)
 
     # Main Chat Interface
     

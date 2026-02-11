@@ -25,7 +25,8 @@ class ExcelAgent:
         if not api_key:
             print("WARNING: GEMINI_API_KEY not found in .env")
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-2.0-flash') 
+        # User requested gemini-3-flash-preview
+        self.model = genai.GenerativeModel('gemini-3-flash-preview') 
 
     def load_data(self):
         """
@@ -91,6 +92,39 @@ class ExcelAgent:
             
         except Exception as e:
             return f"Error loading data: {str(e)}"
+
+    def check_data_quality(self):
+        """
+        Runs sanity checks on the loaded dataframe.
+        Returns a list of warnings/issues.
+        """
+        if self.df is None:
+            return ["Data not loaded."]
+            
+        issues = []
+        
+        # 1. Duplicates
+        if 'employee_id' in self.df.columns:
+            dupes = self.df[self.df.duplicated('employee_id', keep=False)]
+            if not dupes.empty:
+                issues.append(f"Found {len(dupes)} duplicate entries for Employee IDs.")
+                
+        # 2. Missing Key Data
+        key_cols = ['employee_name', 'reporting_manager', 'office_location']
+        for col in key_cols:
+            if col in self.df.columns:
+                missing = self.df[self.df[col].isna()]
+                if not missing.empty:
+                    issues.append(f"Column '{col}' has {len(missing)} missing values.")
+                    
+        # 3. Date Range Check
+        if self.date_range:
+            issues.append(f"Date Range Covered: {min(self.date_range)} to {max(self.date_range)}")
+        
+        if not issues:
+            return ["âœ… Data looks clean! No obvious issues found."]
+            
+        return issues
 
     def _prepare_context(self):
         """

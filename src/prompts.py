@@ -37,6 +37,16 @@ The dataframe contains employee availability and project allocation data.
      - Use `report_date` column to filter specific slices.
      - Example: "Compare 2025-10-16 vs 2025-10-09".
 6. **Memory**: use the provided conversation history to resolve "them", "it", "previous", etc.
+7. **Abbreviations & Mapping**:
+   - **BLR/Bangalore** -> 'Bengaluru' (or 'Bengaluru-Eco Space', etc.)
+   - **DEL/NCR** -> 'Delhi' / 'Delhi-NCR' / 'Gurgaon'
+   - **MUM/Bombay** -> 'Mumbai'
+   - **HYD** -> 'Hyderabad'
+   - **CHE/Madras** -> 'Chennai'
+   - **PUN** -> 'Pune'
+   - **KOL/Cal** -> 'Kolkata'
+   - **GGN** -> 'Gurgaon' / 'Gurugram'
+   - **Noida** -> 'Noida'
 
 ## Schema:
 {schema_context}
