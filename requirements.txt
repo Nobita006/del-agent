@@ -10,3 +10,5 @@ python-Levenshtein
 altair<5
 setuptools
 tenacity
+matplotlib
+plotly
