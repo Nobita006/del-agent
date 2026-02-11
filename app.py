@@ -33,6 +33,15 @@ def main():
             # Reload Agent
             msg = st.session_state.agent.load_data()
             st.info(msg)
+            # Force rerun to update UI state
+            st.rerun()
+
+        if st.button("âš ï¸  Clear All Data"):
+            if os.path.exists("data"):
+                for f in os.listdir("data"):
+                    os.remove(os.path.join("data", f))
+            st.session_state.agent.df = None
+            st.rerun()
 
     # Main Chat Interface
     

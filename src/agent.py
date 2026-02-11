@@ -48,8 +48,13 @@ class ExcelAgent:
                 r_date = file_info['date']
                 self.date_range.append(r_date)
                 
-                # Read
-                temp_df = pd.read_excel(f_path, sheet_name="Availability Tracker")
+                # Read - Dynamic Sheet Handling
+                # Try 'Availability Tracker', fallback to first sheet
+                try:
+                    temp_df = pd.read_excel(f_path, sheet_name="Availability Tracker")
+                except ValueError:
+                    # Sheet not found, try default
+                    temp_df = pd.read_excel(f_path, sheet_name=0)
                 
                 # Standardize Headers
                 temp_df.columns = [
