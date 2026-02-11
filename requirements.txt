@@ -1,0 +1,9 @@
+pandas
+openpyxl
+phonenumbers
+python-dotenv
+google-generativeai
+streamlit
+tabulate
+fuzzywuzzy
+python-Levenshtein
