@@ -8,3 +8,4 @@ tabulate
 fuzzywuzzy
 python-Levenshtein
 altair<5
+setuptools
