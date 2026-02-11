@@ -2,10 +2,12 @@ import re
 from datetime import datetime
 import os
 
-def parse_date_from_filename(filename):
+def parse_date_from_filename(filename, filepath=None):
     """
     Extracts date from filename in format 'Name_DDMMYYYY.xlsx'.
-    Returns datetime object or None.
+    Returns datetime object from filename if possible.
+    If not, and filepath is provided, returns file modification date.
+    Otherwise returns None.
     """
     # Look for 8 digits pattern at the end of the name (before extension)
     match = re.search(r'_(\d{8})\.', filename)
@@ -14,7 +16,13 @@ def parse_date_from_filename(filename):
         try:
             return datetime.strptime(date_str, "%d%m%Y").date()
         except ValueError:
-            return None
+            pass
+            
+    # Fallback to file modification time if filepath is provided
+    if filepath and os.path.exists(filepath):
+        timestamp = os.path.getmtime(filepath)
+        return datetime.fromtimestamp(timestamp).date()
+        
     return None
 
 def get_latest_file(directory, pattern="*.xlsx"):
@@ -28,9 +36,10 @@ def get_latest_file(directory, pattern="*.xlsx"):
         
     for f in os.listdir(directory):
         if f.endswith(".xlsx") or f.endswith(".xls"):
-            date = parse_date_from_filename(f)
+            path = os.path.join(directory, f)
+            date = parse_date_from_filename(f, filepath=path)
             if date:
-                files.append({'file': f, 'date': date, 'path': os.path.join(directory, f)})
+                files.append({'file': f, 'date': date, 'path': path})
     
     if not files:
         return None
@@ -49,9 +58,13 @@ def get_all_files(directory):
         
     for f in os.listdir(directory):
         if f.endswith(".xlsx") or f.endswith(".xls"):
-            date = parse_date_from_filename(f)
+            path = os.path.join(directory, f)
+            # Pass path for fallback date
+            date = parse_date_from_filename(f, filepath=path)
             if date:
-                files.append({'file': f, 'date': date, 'path': os.path.join(directory, f)})
+                files.append({'file': f, 'date': date, 'path': path})
     
-    files.sort(key=lambda x: x['date'], reverse=True)
+    # Sort files
+    if files:
+        files.sort(key=lambda x: x['date'], reverse=True)
     return files
