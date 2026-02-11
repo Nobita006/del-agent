@@ -21,20 +21,27 @@ def main():
         uploaded_file = st.file_uploader("Upload Weekly Excel", type=["xlsx", "xls"])
         
         if uploaded_file:
-            # Save file to data directory
-            os.makedirs("data", exist_ok=True)
-            file_path = os.path.join("data", uploaded_file.name)
-            
-            with open(file_path, "wb") as f:
-                f.write(uploaded_file.getbuffer())
+            # Check if this file is already processed
+            if "last_uploaded_file" not in st.session_state or st.session_state.last_uploaded_file != uploaded_file.name:
+                # Save file to data directory
+                os.makedirs("data", exist_ok=True)
+                file_path = os.path.join("data", uploaded_file.name)
                 
-            st.success(f"Saved: {uploaded_file.name}")
-            
-            # Reload Agent
-            msg = st.session_state.agent.load_data()
-            st.info(msg)
-            # Force rerun to update UI state
-            st.rerun()
+                with open(file_path, "wb") as f:
+                    f.write(uploaded_file.getbuffer())
+                    
+                st.session_state.last_uploaded_file = uploaded_file.name
+                
+                st.success(f"Saved: {uploaded_file.name}")
+                
+                # Reload Agent
+                msg = st.session_state.agent.load_data()
+                st.info(msg)
+                
+                # Force rerun to update UI state
+                st.rerun()
+            else:
+                st.info(f"File '{uploaded_file.name}' already loaded.")
 
         if st.button("Clear All Data"):
             if os.path.exists("data"):
