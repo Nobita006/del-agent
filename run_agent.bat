@@ -1,4 +1,4 @@
 @echo off
 call venv\Scripts\activate
-streamlit run app.py
+streamlit run app.py --server.address 0.0.0.0
 pause

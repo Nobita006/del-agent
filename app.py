@@ -3,7 +3,7 @@ import os
 import shutil
 from src.agent import ExcelAgent
 
-st.set_page_config(page_title="Excel Agent", page_icon="ðŸ“Š", layout="wide")
+st.set_page_config(page_title="Availability Data Excel Agent", page_icon="ðŸ“Š", layout="wide")
 
 # Initialize Session State
 if "messages" not in st.session_state:
@@ -12,7 +12,7 @@ if "agent" not in st.session_state:
     st.session_state.agent = ExcelAgent("data")
 
 def main():
-    st.title("ðŸ“Š Excel Data Agent")
+    st.title("Availability Data Excel Agent")
     
     # Sidebar: File Upload
     with st.sidebar:
